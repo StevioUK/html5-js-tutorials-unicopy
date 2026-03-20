@@ -35,18 +35,27 @@
       <div class="modal-dialog" role="document">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title">Todo Details</h5>
+            <h5 class="modal-title">Edit Todo</h5>
             <button type="button" class="close" data-dismiss="modal" aria-label="Close">
               <span aria-hidden="true">&times;</span>
             </button>
           </div>
           <div class="modal-body">
-            <p>Title: <span id="todo-title"></span></p>
-            <p>Description: <span id="todo-description"></span></p>
-            <p>Deadline: <span id="todo-deadline"></span></p>
+            <div class="form-group">
+              <label>Title</label>
+              <input type="text" class="form-control" id="edit-todo-title">
+            </div>
+            <div class="form-group">
+              <label>Description</label>
+              <textarea class="form-control" id="edit-todo-desc" rows="4"></textarea>
+            </div>
+            <div class="form-group">
+              <label>Deadline</label>
+              <input type="date" class="form-control" id="edit-todo-deadline">
+            </div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-primary">Save changes</button>
+            <button type="button" onclick="saveTodoChanges()" class="btn btn-primary">Save changes</button>
             <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
           </div>
         </div>
@@ -71,6 +80,8 @@
       });
     }
 
+    var currentEditingID = null;
+
     registerEventListeners();
 
     function registerEventListeners() {
@@ -85,11 +96,12 @@
       todoLinks.forEach(function(link) {
         link.addEventListener("click", function() {
           var todoID = this.parentNode.getAttribute('data-id');
+          currentEditingID = todoID;
           var currentTodo = getTodo(todoID);
-          // console.log(currentTodo);
-          document.getElementById("todo-title").innerHTML = currentTodo.title;
-          document.getElementById("todo-description").innerHTML = currentTodo.description;
-          document.getElementById("todo-deadline").innerHTML = currentTodo.deadline;
+          
+          document.getElementById("edit-todo-title").value = currentTodo.title || "";
+          document.getElementById("edit-todo-desc").value = currentTodo.description || "";
+          document.getElementById("edit-todo-deadline").value = currentTodo.deadline || "";
         });
       });
     }
@@ -166,6 +178,39 @@
       // return ID of new todo
       return todoID;
 
+    }
+
+    function saveTodoChanges() {
+      if (currentEditingID === null) return;
+
+      var newTitle = document.getElementById("edit-todo-title").value.trim();
+      var newDesc = document.getElementById("edit-todo-desc").value.trim();
+      var newDeadline = document.getElementById("edit-todo-deadline").value;
+
+      if (!newTitle) {
+        alert("Title cannot be empty!");
+        return;
+      }
+
+      var json_temp = JSON.parse(localStorage.getItem('json_data')) || [];
+
+      if (json_temp[currentEditingID]) {
+        json_temp[currentEditingID].title = newTitle;
+        json_temp[currentEditingID].description = newDesc;
+        json_temp[currentEditingID].deadline = newDeadline;
+
+        localStorage.setItem('json_data', JSON.stringify(json_temp));
+
+        // Update the title link in the list
+        var listItem = document.querySelector("li[data-id='" + currentEditingID + "']");
+        if (listItem) {
+          var titleLink = listItem.querySelector("a");
+          if (titleLink) titleLink.textContent = newTitle;
+        }
+
+        $('#todoModal').modal('hide');
+        currentEditingID = null;
+      }
     }
 
     function deleteAllTodos() {
